@@ -8,7 +8,7 @@ This document provides a detailed technical analysis of the algorithms implement
 2. [Core Algorithms](#core-algorithms)
    - [HNSW (Hierarchical Navigable Small World)](#hnsw-hierarchical-navigable-small-world)
    - [NSG (Navigating Spreading-out Graph)](#nsg-navigating-spreading-out-graph)
-   - [τ-MG (Tau-Monotonic Graph)](#τ-mg-tau-monotonic-graph)
+   - [Tau-MG (Tau-Monotonic Graph)](#tau-mg-tau-monotonic-graph)
 3. [Vector Quantization Techniques](#vector-quantization-techniques)
    - [Product Quantization (PQ)](#product-quantization-pq)
    - [Scalar Quantization (SQ)](#scalar-quantization-sq)
@@ -52,8 +52,8 @@ The repository implements multiple strategies that can be selected based on the 
 | `sq-adc` | HNSW with Scalar Quantization (Asymmetric Distance Computation) |
 | `sq-sdc` | HNSW with Scalar Quantization (Symmetric Distance Computation) |
 | `pca-sdc` | HNSW with PCA dimensionality reduction |
-| `taumg` | τ-Monotonic Graph |
-| `taumg-flash` | τ-MG with Flash optimizations |
+| `taumg` | Tau-Monotonic Graph |
+| `taumg-flash` | Tau-MG with Flash optimizations |
 
 ---
 
@@ -102,19 +102,19 @@ NSG is a graph-based index that aims to build a more structured graph by using a
 - `nsgPrune()` function: The pruning algorithm that differentiates NSG from basic NNG
 - `setCentroids()` function: Centroid computation for navigation entry point
 
-### τ-MG (Tau-Monotonic Graph)
+### Tau-MG (Tau-Monotonic Graph)
 
 **Location:** `include/strategy/taumg_strategy.h`, `third_party/hnswlib/taumg.h`
 
-τ-MG introduces monotonicity constraints to ensure each step during search always makes progress toward the query.
+Tau-MG introduces monotonicity constraints to ensure each step during search always makes progress toward the query.
 
 **Key Characteristics:**
-- **Monotonicity Parameter τ:** Controls the trade-off between graph quality and construction time
+- **Monotonicity Parameter (tau):** Controls the trade-off between graph quality and construction time
 - **Improved Convergence:** The monotonicity constraint helps avoid local minima during search
 
 **Code Focus Areas:**
-- `taumgPrune()` function: Implements the τ-monotonic pruning criterion
-- `TAU` constant in `core.h`: The τ parameter (default: 8)
+- `taumgPrune()` function: Implements the tau-monotonic pruning criterion
+- `TAU` constant in `core.h`: The tau parameter (default: 8)
 
 ---
 
@@ -263,7 +263,7 @@ inline void setLinksData(const void *data, size_t idx, tableint neighbor_id, int
 **Key Innovation - Data Rearrangement:**
 The encoded neighbor data is rearranged to enable efficient SIMD processing:
 
-```
+```text
 Standard Layout (per neighbor):
 [subvec_0|subvec_1][subvec_2|subvec_3]...[subvec_14|subvec_15]
 
@@ -406,8 +406,8 @@ For someone learning the codebase, here are the most important sections to study
 - **Lines 87-94:** SIMD batch size configuration
 
 ### 2. Base Strategy Pattern (`include/strategy/solve_strategy.h`)
-- **Lines 7-26:** Constructor and data loading
-- **Lines 26:** Virtual `solve()` method that each strategy implements
+- **Lines 7-25:** Constructor and data loading
+- **Line 26:** Virtual `solve()` method that each strategy implements
 - **Lines 37-71:** `recall()` function for evaluation
 
 ### 3. PQ Encoding Process (`include/strategy/flash_strategy.h`)
@@ -452,7 +452,7 @@ These optimizations work synergistically:
 - PQ reduces vector dimensions and enables integer arithmetic
 - 4-bit encoding with 16 clusters matches SIMD lane constraints perfectly
 - PQLINK_STORE ensures data is available for batch processing
-- PQLINK_CALC exploits modern CPU SIMD units to their fullest
+- PQLINK_CALC exploits modern CPU SIMD units to the fullest
 
 For those learning the codebase, the recommended path is:
 1. Understand the parameters in `core.h`
